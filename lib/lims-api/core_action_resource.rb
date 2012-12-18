@@ -6,11 +6,13 @@ require 'lims-api/json_encoder'
 require 'lims-api/json_decoder'
 
 require 'lims-api/resource'
+require 'lims-api/hook'
 
 module Lims
   module Api
     class CoreActionResource
       include Resource
+      include Hook
 
 
       attr_reader :core_action_class, :name, :action
@@ -60,6 +62,10 @@ module Lims
           @context.execute_action(@action)
           self
         end
+      end
+
+      define_hook :creator do |receiver, args|
+        Hook::Actions::publish_message(args[:method], args[:result])           
       end
 
       #==================================================

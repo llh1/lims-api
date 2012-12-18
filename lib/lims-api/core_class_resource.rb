@@ -5,11 +5,13 @@ require 'lims-api/json_decoder'
 require 'lims-api/resource'
 require 'lims-api/core_resource_page'
 require 'lims-api/struct_stream'
+require 'lims-api/hook'
 
 module Lims
   module Api
     class CoreClassResource
       include Resource
+      include Hook
 
       NUMBER_PER_PAGES = 20
 
@@ -59,6 +61,9 @@ module Lims
         end
       end
 
+      define_hook :creator do |receiver, args|
+        Hook::Actions::publish_message(args[:method], args[:result])
+      end
 
       #==================================================
       # Encoders

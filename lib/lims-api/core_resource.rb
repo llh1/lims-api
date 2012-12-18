@@ -4,6 +4,7 @@ require 'lims-api/json_decoder'
 
 require 'lims-api/resource'
 require 'lims-api/struct_stream'
+require 'lims-api/hook'
 require 'facets/hash'
 
 module Lims::Api
@@ -15,6 +16,7 @@ module Lims::Api
   # Example : if defined Laboratory::Plate will use Lims::Api::Resources::PlateResource.
   class CoreResource
     include Resource
+    include Hook
     attr_reader :model_name
     # @param [Core::Uuids::UuidResource] uuid_resource a _link_ between the object and the database.
     # @param [String] model_name, the model name (used in URL generation)
@@ -92,6 +94,10 @@ module Lims::Api
         end
       }
     end
+
+    define_hook :updater do |receiver, args|
+      Hook::Actions::publish_message(args[:method], args[:result]) 
+    end    
 
     create_action(:deleter) do |session|
       # load the object
