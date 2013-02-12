@@ -5,6 +5,14 @@ module Lims::Api
   module Resources
     class TransferTubesToTubesResource < CoreActionResource
 
+      # We have to change the parameters name for the transfers attribute.
+      # source should be renamed into source_uuid
+      # and target should be renamed into target_uuid
+      # If we make the change directly into the "attributes" object,
+      # it doesn't work. We can add new parameters but not remove
+      # the key/value source and target. It might be because it references 
+      # the same objet in "result". Below, we just build a new hash of attributes
+      # adding source_uuid and target_uuid but not source and target.
       def filtered_attributes
         new_attributes = {}
         super.tap do |attributes|
