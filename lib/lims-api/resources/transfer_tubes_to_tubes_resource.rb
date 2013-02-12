@@ -6,14 +6,26 @@ module Lims::Api
     class TransferTubesToTubesResource < CoreActionResource
 
       def filtered_attributes
+        new_attributes = {}
         super.tap do |attributes|
-          attributes[:transfers].andtap do |transfers|
-            transfers.map do |transfer|
-              transfer["source_uuid"] = @context.uuid_for(transfer["source"])
-              transfer["target_uuid"] = @context.uuid_for(transfer["target"])
+          attributes.each do |k,v|
+            if k.to_s == "transfers"
+              new_attributes[k] ||= []
+              attributes[k].each do |transfer|
+                h = {}
+                transfer.each do |tk, te|
+                  h[tk] = te unless ["source", "target"].include?(tk.to_s)
+                end
+                h["source_uuid"] = @context.uuid_for(transfer["source"])
+                h["target_uuid"] = @context.uuid_for(transfer["target"])
+                new_attributes[k] << h
+              end
+            else
+              new_attributes[k] = v
             end
           end
         end
+        new_attributes
       end
 
       def content_to_stream(s, mime_type)
