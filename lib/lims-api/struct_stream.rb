@@ -1,8 +1,10 @@
+require 'lims-api/stream'
+
 # Stream to build a *structure*, ie Hash or Array
 # Allow to create a nested structure in a *flat* way.
 # This is so far a naive implementation without state and only basic checks.
 module Lims::Api
-  class StructStream
+  class StructStream < Stream
     class HashStream
       attr_reader :struct
       def initialize
@@ -20,7 +22,6 @@ module Lims::Api
         @struct[@key] = value
         @key = nil
       end
-
     end
 
     class ArrayStream
@@ -38,23 +39,10 @@ module Lims::Api
       end
     end
 
-      attr_reader :struct
+    attr_reader :struct
     def initialize
-      @stack = []
+      super
       @struct = nil
-    end
-
-
-    def push(sub_stream)
-      @stack << sub_stream
-    end
-
-    def current
-      @stack.last
-    end
-
-    def pop
-      @stack.pop
     end
 
     def start_hash
@@ -81,19 +69,6 @@ module Lims::Api
       end_struct
     end
 
-    def with_hash
-      start_hash
-      yield
-      end_hash
-      self
-    end
-
-    def with_array
-      start_array
-      yield
-      end_array
-      self
-    end
     def end_struct
       sub_struct = current.struct
       pop
