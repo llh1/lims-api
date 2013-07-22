@@ -82,13 +82,7 @@ module Lims::Api
 
     def start_hash
       hash = HashStream.new
-
-      if current
-        push_stream "," if current.size > 0
-        current.value_added! if current.is_a?(HashStream)
-        current.size += 1
-      end
-
+      update_current!
       push_stream hash.start_hash
       push hash 
     end
@@ -99,15 +93,22 @@ module Lims::Api
 
     def start_array
       array = ArrayStream.new
+      update_current!
+      push_stream array.start_array
+      push array 
+    end
 
+    # If the hash to be created is embedded in another structure
+    # We should add a comma if the parent structure is a non empty
+    # array. If the parent structure is a hash, we should tell it 
+    # that the hash we create is actually the value of the current key.
+    # Then we increment the size of the parent structure.
+    def update_current!
       if current
-        push_stream "," if current.size > 0
+        push_stream "," if current.is_a?(ArrayStream) && current.size > 0
         current.value_added! if current.is_a?(HashStream)
         current.size += 1
       end
-
-      push_stream array.start_array
-      push array 
     end
 
     def end_array
