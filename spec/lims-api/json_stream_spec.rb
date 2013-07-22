@@ -15,7 +15,25 @@ module Lims::Api
         stream.struct.should == '{"A":1}'
       end
 
-      it "builds an array", :focus => true do
+      it "builds a complex hash" do
+        stream.start_hash
+        stream.add_key "A"
+        stream.start_hash
+        stream.add_key "a"
+        stream.add_value 1
+        stream.end_hash
+
+        stream.add_key "B"
+        stream.start_hash
+        stream.add_key "b"
+        stream.add_value 2
+        stream.end_hash
+        stream.end_hash
+
+        stream.struct.should == '{"A":{"a":1},"B":{"b":2}}'
+      end
+
+      it "builds an array" do
         stream.start_array
         stream.start_array
         stream.add_value "a"
@@ -56,7 +74,7 @@ module Lims::Api
         stream.struct.should == '{"list":[1,"hello",2,{"A":"hello 2"}],"param":"hello 3"}'
       end
 
-      it "builds a complex object using blocks" do
+      it "builds a complex object using blocks", :focus => true do
         stream.with_hash do
           stream.add_key "list"
 
@@ -71,9 +89,17 @@ module Lims::Api
 
             stream.add_value 2
           end
+
+          stream.add_key "B"
+          stream.with_array do
+            stream.with_hash do
+              stream.add_key "C"
+              stream.add_value 3
+            end
+          end
         end
 
-        stream.struct.should == '{"list":[1,"hello",{"A":1},2]}'
+        stream.struct.should == '{"list":[1,"hello",{"A":1},2],"B":[{"C":3}]}'
       end
     end
   end
