@@ -1,7 +1,7 @@
 module Lims::Api
   class Stream
 
-    def initialize
+    def initialize(stream = nil)
       @stack = []
     end
 
