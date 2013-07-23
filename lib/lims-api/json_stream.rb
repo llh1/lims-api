@@ -67,13 +67,17 @@ module Lims::Api
     end
 
 
-    def initialize
+    def initialize(stream = nil)
       super
-      @stream = StringIO.new 
+      @stream = stream
     end
 
-    def struct
-      @stream.string
+    def json
+      if @stream.respond_to?(:string)
+        @stream.string
+      else
+        @stream.to_s
+      end
     end
 
     def push_stream(sub_stream)
