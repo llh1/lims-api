@@ -4,7 +4,7 @@ require 'lims-api/json_stream'
 module Lims::Api
   describe JsonStream do
     context "build a stream" do
-      let(:stream) { described_class.new }
+      let(:stream) { described_class.new(StringIO.new) }
 
       it "builds a hash" do
         stream.start_hash
@@ -12,7 +12,7 @@ module Lims::Api
         stream.add_value 1
         stream.end_hash
 
-        stream.struct.should == '{"A":1}'
+        stream.json.should == '{"A":1}'
       end
 
       it "builds a complex hash" do
@@ -30,7 +30,7 @@ module Lims::Api
         stream.end_hash
         stream.end_hash
 
-        stream.struct.should == '{"A":{"a":1},"B":{"b":2}}'
+        stream.json.should == '{"A":{"a":1},"B":{"b":2}}'
       end
 
       it "builds an array" do
@@ -45,7 +45,7 @@ module Lims::Api
         stream.add_value 3
         stream.end_array
 
-        stream.struct.should == '[["a","b"],1,2,3]'
+        stream.json.should == '[["a","b"],1,2,3]'
       end
 
       it "builds a complex nested structure" do
@@ -57,7 +57,7 @@ module Lims::Api
         stream.add_value "hello"
         stream.add_value 2
 
-        stream.struct.should == '{"list":[1,"hello",2'
+        stream.json.should == '{"list":[1,"hello",2'
 
         stream.start_hash
         stream.add_key "A"
@@ -71,7 +71,7 @@ module Lims::Api
 
         stream.end_hash
 
-        stream.struct.should == '{"list":[1,"hello",2,{"A":"hello 2"}],"param":"hello 3"}'
+        stream.json.should == '{"list":[1,"hello",2,{"A":"hello 2"}],"param":"hello 3"}'
       end
 
       it "builds a complex object using blocks", :focus => true do
@@ -99,7 +99,7 @@ module Lims::Api
           end
         end
 
-        stream.struct.should == '{"list":[1,"hello",{"A":1},2],"B":[{"C":3}]}'
+        stream.json.should == '{"list":[1,"hello",{"A":1},2],"B":[{"C":3}]}'
       end
     end
   end
