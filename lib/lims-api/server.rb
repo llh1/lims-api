@@ -185,7 +185,10 @@ module Lims
 
         status  encoder.status
         headers 'Content-Type' => encoder.content_type
-        body    encoder.call
+
+        stream do |out|
+          encoder.stream(out)
+        end
       end
 
       # @method get_handler
