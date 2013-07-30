@@ -1,17 +1,18 @@
 require 'lims-api/stream'
+require 'oj'
 
 module Lims::Api
   class JsonStream < Stream
 
     class HashStream
-      attr_accessor :size
+      attr_accessor :delimiter
 
       def initialize
         @key_added = false
-        @size = 0
+        @delimiter = ""
       end
 
-      def start_hash
+      def open_hash
         "{"
       end
 
@@ -22,32 +23,30 @@ module Lims::Api
       def add_key(key)
         raise RuntimeError, "Expecting a value" if @key_added
         @key_added = true
-
-        @key = "#{key.to_json}:"
-        (@size > 0) ? ",#{@key}" : @key
+        @key = "#{@delimiter}#{Oj.dump(key)}:"
       end
 
       def add_value(value)
         raise RuntimeError, "Expecting a key" unless @key_added
         @key_added = false
-        @size += 1
-        value.to_json
+        @delimiter = ","
+        Oj.dump(value)
       end
 
-      def end_hash
+      def close_hash
         "}"
       end
     end
 
 
     class ArrayStream
-      attr_accessor :size
+      attr_accessor :delimiter
 
       def initialize
-        @size = 0
+        @delimiter = ""
       end
 
-      def start_array
+      def open_array
         "["
       end
 
@@ -56,12 +55,12 @@ module Lims::Api
       end
 
       def add_value(value)
-        result = (@size > 0) ? ",#{value.to_json}" : value.to_json
-        @size += 1
+        result = "#{delimiter}#{Oj.dump(value)}"
+        @delimiter = ","
         result
       end
 
-      def end_array
+      def close_array
         "]"
       end
     end
@@ -87,18 +86,18 @@ module Lims::Api
     def start_hash
       hash = HashStream.new
       update_current!
-      push_stream hash.start_hash
+      push_stream hash.open_hash
       push hash 
     end
 
     def end_hash
-      push_stream pop.end_hash
+      push_stream pop.close_hash
     end
 
     def start_array
       array = ArrayStream.new
       update_current!
-      push_stream array.start_array
+      push_stream array.open_array
       push array 
     end
 
@@ -109,14 +108,14 @@ module Lims::Api
     # Then we increment the size of the parent structure.
     def update_current!
       if current
-        push_stream "," if current.is_a?(ArrayStream) && current.size > 0
+        push_stream current.delimiter if current.is_a?(ArrayStream)
         current.value_added! if current.is_a?(HashStream)
-        current.size += 1
+        current.delimiter = ","
       end
     end
 
     def end_array
-      push_stream pop.end_array
+      push_stream pop.close_array
     end
 
     def add_key(key)
