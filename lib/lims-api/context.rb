@@ -7,6 +7,7 @@ require 'lims-api/root_resource'
 require 'lims-api/resources'
 require 'lims-api/persistence/search_resource'
 require 'lims-api/mime_typed'
+require 'set'
 
 require 'lims-core/actions/bulk_action'
 
@@ -411,9 +412,60 @@ module Lims
           end
           private_class_method :resource_class_for
 
+
+          def self.discover_resource_classes
+            return if @__discovery_done
+            @@model_to_class = {}
+            @@action_to_class = {}
+
+            browse_constants(Lims) do |klass|
+              name = classname_for(klass)
+              snakename = name.snakecase
+
+              if klass.ancestors.include?(Core::Resource)
+                @@model_to_class[snakename] = klass
+                resource_class = resource_class_for(klass, name) ||  CoreActionResource
+                @@model_class_to_resource_class[klass] = resource_class
+              end
+
+              if klass.ancestors.include?(Core::Actions::Action)
+                @@action_to_class[snakename] = klass
+                resource_class = resource_class_for(klass, name) ||  CoreActionResource
+                @@model_class_to_resource_class[klass] = resource_class
+              end
+            end
+
+            @@class_to_model = @@model_to_class.inverse
+            @@class_to_action = @@action_to_class.inverse
+            @__discovery_done = true
+          end
+
+          def self.browse_constants(parent, &block)
+            @browsed_constants ||= Set.new 
+            if parent.is_a?(Module) && !@browsed_constants.include?(parent)
+              @browsed_constants << parent
+              child_constants(parent, parent.constants).each do |child|
+                block.call(child)
+                browse_constants(child, &block)
+              end
+            end
+          end
+
+          def self.child_constants(klass, constants)
+            constants.uniq.inject([]) do |m,e|
+              child = klass.const_get(e)
+              if child.is_a?(Module) && child.name =~ /^#{klass}.*$/
+                m << child
+              else
+                m
+              end
+            end
+          end
+
+
           # This method discovers and registers all needed classes.
           # It mainly populates the xToy maps.
-          def self.discover_resource_classes()
+          def self.discover_resource_classes_old
             return if @__discovery_done
             @@model_to_class = {}
             @@action_to_class = {}
