@@ -6,6 +6,8 @@ require 'lims-api/action_selector_resource'
 require 'lims-api/root_resource'
 require 'lims-api/resources'
 require 'lims-api/persistence/search_resource'
+require 'lims-api/persistence/revision_resource'
+require 'lims-api/core_revision_resource'
 require 'lims-api/mime_typed'
 
 require 'lims-core/actions/bulk_action'
@@ -171,18 +173,37 @@ module Lims
         find_model_name(klass).pluralize
       end
 
+      def uuid_resource(uuid)
+        with_session do |session|
+          session.uuid_resource[:uuid => uuid]
+        end
+      end
+      private :uuid_resource
+
       # look up into the uuid table to find the type of the resource
       # but don't load yet the actual object.
       def for_uuid(uuid)
-        with_session do |session|
-          session.uuid_resource[:uuid => uuid]
-        end.andtap do |uuid_resource|
-            resource_class_for_class(uuid_resource.model_class).andtap do |resource_class|
-              resource_class.new(self, uuid_resource, find_model_name(uuid_resource.model_class))
-            end
+        uuid_resource(uuid).andtap do |uuid_resource|
+          resource_class_for_class(uuid_resource.model_class).andtap do |resource_class|
+            resource_class.new(self, uuid_resource, find_model_name(uuid_resource.model_class))
           end
-
         end
+      end
+
+      def for_revision(uuid, session_id=nil)
+        if session_id
+          for_uuid(uuid).tap do |resource_class|
+            resource_class.extend(CoreRevisionResource)
+            resource_class.session_id = session_id
+          end
+        else
+          uuid_resource(uuid).andtap do |uuid_resource|
+            revision_model_class = find_model_class("revision")
+            resource_class = resource_class_for_class(revision_model_class)
+            resource_class.new(self, uuid_resource, find_model_name(uuid_resource.model_class))
+          end
+        end
+      end
 
         # Find the resource class for a class
         # @param [Class] klass 

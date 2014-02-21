@@ -87,9 +87,10 @@ module Lims
       # from the URI and returning the underlying resource.  Should the underlying resource be
       # `nil` then the response is an HTTP 404 (Not Found) containing a general error response
       # body.
-      before(%r{^/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})(?:/.+)?}) do
-        @resource = @context.for_uuid(params[:captures].first) or
-        general_error(404, 'resource could not be found')
+      before(%r{^/([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})(?:/(revisions)(?:/([0-9]+)/?)?)?}) do
+        uuid, revisions, session_id = params[:captures][0], params[:captures][1], params[:captures][2]
+        return general_error(404, 'resource could not be found') unless uuid
+        @resource = revisions ? @context.for_revision(uuid, session_id) : @context.for_uuid(uuid)
       end
 
       # @method before_model
@@ -122,6 +123,7 @@ module Lims
       before('/') do
         @resource = @context.for_root
       end
+
       # @method before_action
       # @overload GET '/*/:action'
       # @overload POST '/*/:action'
@@ -136,7 +138,7 @@ module Lims
       # the action from the URI and returning an object that behaves as a resource.  If the
       # object returned is `nil` then the response is an HTTP 400 (Bad Request) containing a
       # general error response body.
-      before('/*/:action') do
+      before('/:model/:action') do
         @resource = @resource.action(params[:action]) or
         general_error(400, 'action is undefined')
       end
