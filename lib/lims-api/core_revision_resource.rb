@@ -29,8 +29,8 @@ module Lims::Api
     private
 
     def load_versioned_object(session)
-      Lims::Core::Persistence::Sequel::Revision::Session.new(session.store, @session_id).with_session do |session_revision|
-        session_revision[@uuid_resource]
+      session.user_session[@session_id].with_session do |revision_session|
+        revision_session[@uuid_resource]
       end
     end
   end

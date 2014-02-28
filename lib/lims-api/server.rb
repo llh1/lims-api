@@ -41,6 +41,16 @@ module Lims
         condition { @resource.nil? != resource_state }
       end
 
+      # @method revisions(is_revision_url)
+      # @param is_revision_url [false] skip the filters if it's a revision url
+      set(:revisions) do |is_revision_url|
+        condition do 
+          unless is_revision_url
+            !params["captures"].include?("revisions")
+          end
+        end
+      end
+
       # Helper method for generating a general error response.  The current request will be halted
       # with the response having a MIME type of `application/json` and the body containing the
       # messages.
@@ -138,7 +148,7 @@ module Lims
       # the action from the URI and returning an object that behaves as a resource.  If the
       # object returned is `nil` then the response is an HTTP 400 (Bad Request) containing a
       # general error response body.
-      before('/:model/:action') do
+      before('/:model/:action', :revisions => false) do
         @resource = @resource.action(params[:action]) or
         general_error(400, 'action is undefined')
       end
